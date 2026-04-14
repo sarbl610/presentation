@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SADM — Ship Air Defence Model | BAE Systems Australia</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg: #0c0e14;
+  --bg2: #141720;
+  --bg3: #1a1e2a;
+  --bg4: #222738;
+  --tx: #e4e6ed;
+  --tx2: #9da3b4;
+  --tx3: #5e6478;
+  --bdr: rgba(255,255,255,0.06);
+  --blue: #4d8fef;
+  --blue-dim: rgba(77,143,239,0.12);
+  --teal: #2bc4a0;
+  --teal-dim: rgba(43,196,160,0.12);
+  --amber: #efaa3d;
+  --amber-dim: rgba(239,170,61,0.12);
+  --red: #ef5454;
+  --red-dim: rgba(239,84,84,0.12);
+  --purple: #9b7bef;
+  --purple-dim: rgba(155,123,239,0.12);
+  --coral: #ef7b5a;
+  --coral-dim: rgba(239,123,90,0.12);
+  --pink: #e06090;
+  --font: 'DM Sans', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+  --radius: 10px;
+  --radius-lg: 14px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--tx);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Header */
+.header {
+  padding: 32px 32px 24px;
+  border-bottom: 1px solid var(--bdr);
+  background: linear-gradient(180deg, rgba(77,143,239,0.04) 0%, transparent 100%);
+}
+.header-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.header h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; }
+.header h1 span { color: var(--blue); }
+.badge {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--tx2);
+  background: var(--bg3);
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--bdr);
+}
+.header-sub { font-size: 13px; color: var(--tx2); margin-top: 8px; }
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 2px;
+  padding: 16px 32px 0;
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.tab {
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font);
+  border: none;
+  background: transparent;
+  color: var(--tx3);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+.tab:hover { color: var(--tx2); }
+.tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+/* Panels */
+.panel { display: none; padding: 24px 32px 32px; }
+.panel.active { display: block; }
+
+/* Controls */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+  font-size: 13px;
+  color: var(--tx2);
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  background: var(--bg2);
+  border-radius: var(--radius);
+  border: 1px solid var(--bdr);
+}
+.controls label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+.controls input[type="checkbox"] {
+  accent-color: var(--blue);
+  width: 14px; height: 14px;
+}
+.controls select {
+  font-family: var(--font);
+  font-size: 13px;
+  background: var(--bg3);
+  color: var(--tx);
+  border: 1px solid var(--bdr);
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+/* Stats */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 8px;
+  margin-top: 20px;
+}
+.stat {
+  background: var(--bg2);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  border: 1px solid var(--bdr);
+}
+.stat-label {
+  font-size: 10px;
+  font-family: var(--mono);
+  color: var(--tx3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.stat-val {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--tx);
+  margin-top: 4px;
+}
+
+/* Legend */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 16px;
+  font-size: 12px;
+  color: var(--tx2);
+}
+.legend-i { display: flex; align-items: center; gap: 6px; }
+.legend-d { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* Animations */
+@keyframes pulse { 0%,100%{r:4} 50%{r:7} }
+@keyframes sweep { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+@keyframes dash { to{stroke-dashoffset:-20} }
+.threat { animation: pulse 1.2s ease-in-out infinite; }
+.radar-sweep { animation: sweep 3s linear infinite; transform-origin: 340px 310px; }
+.flow-line { stroke-dasharray: 6 4; animation: dash 1s linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .threat, .radar-sweep, .flow-line { animation: none; }
+}
+
+/* SVG container */
+.svg-wrap {
+  background: var(--bg2);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--bdr);
+  padding: 16px;
+  overflow: hidden;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .header, .panel { padding-left: 16px; padding-right: 16px; }
+  .tabs { padding-left: 16px; }
+  .tab { padding: 8px 12px; font-size: 12px; }
+  .stat-row { grid-template-columns: repeat(3, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <h1><span>SADM</span> — Ship Air Defence Model</h1>
+    <span class="badge">BAE Systems Australia</span>
+  </div>
+  <p class="header-sub">Physics-based modelling and simulation for above-water warfare analysis, used by 39+ organisations across 13 countries.</p>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('sim')">Simulation</button>
+  <button class="tab" onclick="showTab('arch')">Architecture</button>
+  <button class="tab" onclick="showTab('systems')">Systems modelled</button>
+</div>
+
+<!-- TAB 1: SIMULATION -->
+<div id="sim" class="panel active">
+
+<div class="controls">
+  <label><input type="checkbox" id="t-zones" checked onchange="tglZ()"> Defence zones</label>
+  <label><input type="checkbox" id="t-soft" checked onchange="tglS()"> Soft-kill</label>
+  <label><input type="checkbox" id="t-hard" checked onchange="tglH()"> Hard-kill</label>
+  <label><input type="checkbox" id="t-wx" onchange="tglW()"> Weather</label>
+  <span style="margin-left:auto">Scenario</span>
+  <select onchange="setScen(this.value)">
+    <option value="multi">Multi-threat</option>
+    <option value="saturation">Saturation attack</option>
+    <option value="single">Single ASM</option>
+  </select>
+</div>
+
+<div class="svg-wrap">
+<svg id="sim-svg" width="100%" viewBox="0 0 680 470" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <radialGradient id="z1" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#4d8fef" stop-opacity="0"/><stop offset="90%" stop-color="#4d8fef" stop-opacity="0.06"/><stop offset="100%" stop-color="#4d8fef" stop-opacity="0.16"/></radialGradient>
+    <radialGradient id="z2" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#2bc4a0" stop-opacity="0"/><stop offset="85%" stop-color="#2bc4a0" stop-opacity="0.06"/><stop offset="100%" stop-color="#2bc4a0" stop-opacity="0.18"/></radialGradient>
+    <radialGradient id="z3" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#efaa3d" stop-opacity="0"/><stop offset="80%" stop-color="#efaa3d" stop-opacity="0.08"/><stop offset="100%" stop-color="#efaa3d" stop-opacity="0.22"/></radialGradient>
+    <radialGradient id="z4" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#ef5454" stop-opacity="0"/><stop offset="75%" stop-color="#ef5454" stop-opacity="0.1"/><stop offset="100%" stop-color="#ef5454" stop-opacity="0.26"/></radialGradient>
+  </defs>
+
+  <!-- Weather overlay -->
+  <g id="wx-layer" style="display:none">
+    <rect x="0" y="0" width="680" height="470" fill="#9da3b4" opacity="0.04"/>
+    <text x="16" y="20" font-size="12" fill="#5e6478">Rain + evaporation duct — signal attenuation active</text>
+    <line x1="50" y1="35" x2="630" y2="35" stroke="#5e6478" stroke-width="0.5" stroke-dasharray="2 6" opacity="0.3"/>
+    <line x1="50" y1="48" x2="630" y2="48" stroke="#5e6478" stroke-width="0.5" stroke-dasharray="2 6" opacity="0.2"/>
+  </g>
+
+  <!-- Defence zones -->
+  <g id="def-zones">
+    <circle cx="340" cy="310" r="220" fill="url(#z1)" stroke="#4d8fef" stroke-width="0.5" stroke-dasharray="6 4" opacity="0.6"/>
+    <circle cx="340" cy="310" r="155" fill="url(#z2)" stroke="#2bc4a0" stroke-width="0.5" stroke-dasharray="6 4" opacity="0.6"/>
+    <circle cx="340" cy="310" r="95" fill="url(#z3)" stroke="#efaa3d" stroke-width="0.5" stroke-dasharray="6 4" opacity="0.6"/>
+    <circle cx="340" cy="310" r="42" fill="url(#z4)" stroke="#ef5454" stroke-width="0.5" stroke-dasharray="4 3" opacity="0.7"/>
+    <text x="340" y="80" text-anchor="middle" font-size="12" fill="#4d8fef" opacity="0.7">Radar surveillance zone</text>
+    <text x="340" y="146" text-anchor="middle" font-size="12" fill="#2bc4a0" opacity="0.7">Missile engagement zone</text>
+    <text x="340" y="207" text-anchor="middle" font-size="12" fill="#efaa3d" opacity="0.7">Gun engagement zone</text>
+    <text x="340" y="262" text-anchor="middle" font-size="12" fill="#ef5454" opacity="0.7">CIWS</text>
+  </g>
+
+  <!-- Radar sweep -->
+  <line class="radar-sweep" x1="340" y1="310" x2="340" y2="90" stroke="#4d8fef" stroke-width="1.5" opacity="0.3"/>
+
+  <!-- Ship -->
+  <g>
+    <polygon points="340,282 328,326 340,338 352,326" fill="#9da3b4" opacity="0.7"/>
+    <rect x="332" y="300" width="16" height="6" rx="2" fill="#9da3b4" opacity="0.5"/>
+    <circle cx="340" cy="310" r="3" fill="#e4e6ed" opacity="0.6"/>
+  </g>
+
+  <!-- Soft-kill -->
+  <g id="soft-kill">
+    <ellipse cx="210" cy="195" rx="28" ry="16" fill="#9b7bef" opacity="0.1" stroke="#9b7bef" stroke-width="0.5" stroke-dasharray="3 3"/>
+    <text x="210" y="172" text-anchor="middle" font-size="12" fill="#9b7bef">Chaff</text>
+    <circle cx="440" cy="280" r="8" fill="#9b7bef" opacity="0.15" stroke="#9b7bef" stroke-width="0.5"/>
+    <circle cx="440" cy="280" r="3" fill="#9b7bef" opacity="0.4"/>
+    <text x="456" y="275" font-size="12" fill="#9b7bef">Nulka</text>
+    <line x1="352" y1="306" x2="432" y2="280" class="flow-line" stroke="#9b7bef" stroke-width="0.8" opacity="0.4"/>
+    <path d="M340 325 L290 430 L390 430 Z" fill="#9b7bef" opacity="0.04" stroke="#9b7bef" stroke-width="0.5" stroke-dasharray="4 4"/>
+    <text x="340" y="445" text-anchor="middle" font-size="12" fill="#9b7bef">ECM jammer</text>
+  </g>
+
+  <!-- Hard-kill -->
+  <g id="hard-kill">
+    <line x1="340" y1="298" x2="175" y2="160" stroke="#2bc4a0" stroke-width="1" stroke-dasharray="3 5" marker-end="url(#arrow)" opacity="0.45"/>
+    <text x="220" y="240" font-size="11" fill="#2bc4a0" transform="rotate(-35 220 240)">SAM</text>
+    <line x1="340" y1="298" x2="520" y2="175" stroke="#4d8fef" stroke-width="1" stroke-dasharray="3 5" marker-end="url(#arrow)" opacity="0.45"/>
+    <text x="442" y="222" font-size="11" fill="#4d8fef" transform="rotate(30 442 222)">SAM</text>
+    <line x1="348" y1="318" x2="500" y2="310" stroke="#efaa3d" stroke-width="1.5" stroke-dasharray="2 4" marker-end="url(#arrow)" opacity="0.45"/>
+    <text x="430" y="330" font-size="11" fill="#efaa3d">Gun</text>
+  </g>
+
+  <!-- Threats: multi -->
+  <g id="threats-multi">
+    <g><circle class="threat" cx="130" cy="130" r="5" fill="#ef5454"/><text x="86" y="122" font-size="12" fill="#ef5454">ASM</text>
+      <line x1="140" y1="138" x2="270" y2="255" stroke="#ef5454" stroke-width="0.5" stroke-dasharray="4 4" marker-end="url(#arrow)" opacity="0.35"/></g>
+    <g><circle class="threat" cx="560" cy="140" r="5" fill="#ef7b5a" style="animation-delay:.4s"/><text x="575" y="135" font-size="12" fill="#ef7b5a">Aircraft</text>
+      <line x1="550" y1="148" x2="410" y2="260" stroke="#ef7b5a" stroke-width="0.5" stroke-dasharray="4 4" marker-end="url(#arrow)" opacity="0.35"/></g>
+    <g><circle class="threat" cx="560" cy="310" r="4" fill="#e06090" style="animation-delay:.2s"/><circle class="threat" cx="575" cy="325" r="3" fill="#e06090" style="animation-delay:.6s"/>
+      <text x="590" y="318" font-size="12" fill="#e06090">UAVs</text>
+      <line x1="550" y1="312" x2="450" y2="310" stroke="#e06090" stroke-width="0.5" stroke-dasharray="4 4" marker-end="url(#arrow)" opacity="0.35"/></g>
+    <g><circle class="threat" cx="240" cy="490" r="5" fill="#ef5454" style="animation-delay:.3s"/><text x="184" y="505" font-size="12" fill="#ef5454">Sea-skimmer</text>
+      <line x1="248" y1="482" x2="320" y2="380" stroke="#ef5454" stroke-width="0.5" stroke-dasharray="4 4" marker-end="url(#arrow)" opacity="0.35"/></g>
+  </g>
+
+  <!-- Threats: saturation -->
+  <g id="threats-sat" style="display:none">
+    <g><circle class="threat" cx="100" cy="160" r="4" fill="#ef5454"/><circle class="threat" cx="130" cy="120" r="4" fill="#ef5454" style="animation-delay:.2s"/><circle class="threat" cx="80" cy="200" r="4" fill="#ef5454" style="animation-delay:.5s"/>
+      <text x="50" y="152" font-size="12" fill="#ef5454">Salvo 1</text></g>
+    <g><circle class="threat" cx="560" cy="140" r="4" fill="#ef5454" style="animation-delay:.1s"/><circle class="threat" cx="590" cy="170" r="4" fill="#ef5454" style="animation-delay:.3s"/><circle class="threat" cx="540" cy="190" r="4" fill="#ef5454" style="animation-delay:.6s"/>
+      <text x="600" y="155" font-size="12" fill="#ef5454">Salvo 2</text></g>
+    <g><circle class="threat" cx="500" cy="470" r="4" fill="#ef5454" style="animation-delay:.15s"/><circle class="threat" cx="530" cy="440" r="4" fill="#ef5454" style="animation-delay:.45s"/>
+      <text x="545" y="465" font-size="12" fill="#ef5454">Salvo 3</text></g>
+  </g>
+
+  <!-- Threats: single -->
+  <g id="threats-single" style="display:none">
+    <circle class="threat" cx="100" cy="310" r="6" fill="#ef5454"/>
+    <text x="56" y="300" font-size="12" fill="#ef5454">ASM</text>
+    <line x1="112" y1="310" x2="290" y2="310" stroke="#ef5454" stroke-width="0.8" stroke-dasharray="4 4" marker-end="url(#arrow)" opacity="0.45"/>
+  </g>
+
+</svg>
+</div>
+
+<div class="legend">
+  <div class="legend-i"><div class="legend-d" style="background:#4d8fef"></div>Radar / surveillance</div>
+  <div class="legend-i"><div class="legend-d" style="background:#2bc4a0"></div>Missile hard-kill</div>
+  <div class="legend-i"><div class="legend-d" style="background:#efaa3d"></div>Gun hard-kill</div>
+  <div class="legend-i"><div class="legend-d" style="background:#9b7bef"></div>Soft-kill (chaff/decoy/ECM)</div>
+  <div class="legend-i"><div class="legend-d" style="background:#ef5454"></div>Threats</div>
+</div>
+
+<div class="stat-row">
+  <div class="stat"><div class="stat-label">Version</div><div class="stat-val" style="font-size:16px">SADM v7</div></div>
+  <div class="stat"><div class="stat-label">Countries</div><div class="stat-val">13</div></div>
+  <div class="stat"><div class="stat-label">Orgs</div><div class="stat-val">39+</div></div>
+  <div class="stat"><div class="stat-label">Since</div><div class="stat-val">1998</div></div>
+</div>
+</div>
+
+<!-- TAB 2: ARCHITECTURE -->
+<div id="arch" class="panel">
+<div class="svg-wrap">
+<svg width="100%" viewBox="0 0 680 460" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="a2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+  <!-- Front End -->
+  <rect x="40" y="20" width="280" height="120" rx="12" fill="#4d8fef" fill-opacity="0.08" stroke="#4d8fef" stroke-width="0.5"/>
+  <text x="180" y="48" text-anchor="middle" font-size="14" font-weight="500" fill="#4d8fef">SADM front end</text>
+  <text x="180" y="66" text-anchor="middle" font-size="12" fill="#9da3b4">Scenario configuration</text>
+  <rect x="60" y="82" width="110" height="38" rx="6" fill="#4d8fef" fill-opacity="0.06" stroke="#4d8fef" stroke-width="0.4"/>
+  <text x="115" y="105" text-anchor="middle" font-size="11" fill="#4d8fef">Platform models</text>
+  <rect x="190" y="82" width="110" height="38" rx="6" fill="#4d8fef" fill-opacity="0.06" stroke="#4d8fef" stroke-width="0.4"/>
+  <text x="245" y="105" text-anchor="middle" font-size="11" fill="#4d8fef">Threat profiles</text>
+
+  <!-- Back End -->
+  <rect x="360" y="20" width="280" height="120" rx="12" fill="#2bc4a0" fill-opacity="0.08" stroke="#2bc4a0" stroke-width="0.5"/>
+  <text x="500" y="48" text-anchor="middle" font-size="14" font-weight="500" fill="#2bc4a0">SADM back end</text>
+  <text x="500" y="66" text-anchor="middle" font-size="12" fill="#9da3b4">Physics-based engine</text>
+  <rect x="380" y="82" width="110" height="38" rx="6" fill="#2bc4a0" fill-opacity="0.06" stroke="#2bc4a0" stroke-width="0.4"/>
+  <text x="435" y="105" text-anchor="middle" font-size="11" fill="#2bc4a0">Monte Carlo</text>
+  <rect x="510" y="82" width="110" height="38" rx="6" fill="#2bc4a0" fill-opacity="0.06" stroke="#2bc4a0" stroke-width="0.4"/>
+  <text x="565" y="105" text-anchor="middle" font-size="11" fill="#2bc4a0">Parallel runs</text>
+
+  <line x1="320" y1="80" x2="358" y2="80" stroke="#5e6478" stroke-width="0.5" marker-end="url(#a2)"/>
+
+  <!-- Physics models -->
+  <text x="340" y="178" text-anchor="middle" font-size="14" font-weight="500" fill="#e4e6ed">Physics-based models</text>
+
+  <rect x="40" y="198" width="130" height="48" rx="8" fill="#9b7bef" fill-opacity="0.08" stroke="#9b7bef" stroke-width="0.5"/>
+  <text x="105" y="217" text-anchor="middle" font-size="13" font-weight="500" fill="#9b7bef">RF sensors</text>
+  <text x="105" y="233" text-anchor="middle" font-size="11" fill="#9da3b4">Radar, ESM</text>
+
+  <rect x="185" y="198" width="130" height="48" rx="8" fill="#ef7b5a" fill-opacity="0.08" stroke="#ef7b5a" stroke-width="0.5"/>
+  <text x="250" y="217" text-anchor="middle" font-size="13" font-weight="500" fill="#ef7b5a">Seekers</text>
+  <text x="250" y="233" text-anchor="middle" font-size="11" fill="#9da3b4">RF, IR, EO</text>
+
+  <rect x="330" y="198" width="130" height="48" rx="8" fill="#efaa3d" fill-opacity="0.08" stroke="#efaa3d" stroke-width="0.5"/>
+  <text x="395" y="217" text-anchor="middle" font-size="13" font-weight="500" fill="#efaa3d">Weapons</text>
+  <text x="395" y="233" text-anchor="middle" font-size="11" fill="#9da3b4">Guns, missiles</text>
+
+  <rect x="475" y="198" width="165" height="48" rx="8" fill="#e06090" fill-opacity="0.08" stroke="#e06090" stroke-width="0.5"/>
+  <text x="558" y="217" text-anchor="middle" font-size="13" font-weight="500" fill="#e06090">Countermeasures</text>
+  <text x="558" y="233" text-anchor="middle" font-size="11" fill="#9da3b4">Chaff, decoy, ECM</text>
+
+  <!-- Environment row -->
+  <rect x="40" y="278" width="200" height="48" rx="8" fill="#5e6478" fill-opacity="0.12" stroke="#5e6478" stroke-width="0.4"/>
+  <text x="140" y="297" text-anchor="middle" font-size="13" font-weight="500" fill="#9da3b4">Environment</text>
+  <text x="140" y="313" text-anchor="middle" font-size="11" fill="#5e6478">Weather, propagation</text>
+
+  <rect x="260" y="278" width="180" height="48" rx="8" fill="#5e6478" fill-opacity="0.12" stroke="#5e6478" stroke-width="0.4"/>
+  <text x="350" y="297" text-anchor="middle" font-size="13" font-weight="500" fill="#9da3b4">Ship dynamics</text>
+  <text x="350" y="313" text-anchor="middle" font-size="11" fill="#5e6478">Motion, signatures</text>
+
+  <rect x="460" y="278" width="180" height="48" rx="8" fill="#5e6478" fill-opacity="0.12" stroke="#5e6478" stroke-width="0.4"/>
+  <text x="550" y="297" text-anchor="middle" font-size="13" font-weight="500" fill="#9da3b4">Combat system</text>
+  <text x="550" y="313" text-anchor="middle" font-size="11" fill="#5e6478">C2, target assignment</text>
+
+  <!-- Connecting arrows -->
+  <line x1="500" y1="140" x2="340" y2="170" stroke="#5e6478" stroke-width="0.5" marker-end="url(#a2)" opacity="0.35"/>
+  <line x1="340" y1="246" x2="340" y2="276" stroke="#5e6478" stroke-width="0.5" marker-end="url(#a2)" opacity="0.35"/>
+  <line x1="340" y1="326" x2="340" y2="366" stroke="#5e6478" stroke-width="0.5" marker-end="url(#a2)" opacity="0.35"/>
+
+  <!-- Outputs -->
+  <text x="340" y="366" text-anchor="middle" font-size="14" font-weight="500" fill="#e4e6ed">Analysis outputs</text>
+
+  <rect x="40" y="385" width="145" height="42" rx="8" fill="#4d8fef" fill-opacity="0.08" stroke="#4d8fef" stroke-width="0.5"/>
+  <text x="113" y="410" text-anchor="middle" font-size="12" font-weight="500" fill="#4d8fef">2D / 3D plots</text>
+
+  <rect x="200" y="385" width="145" height="42" rx="8" fill="#2bc4a0" fill-opacity="0.08" stroke="#2bc4a0" stroke-width="0.5"/>
+  <text x="273" y="410" text-anchor="middle" font-size="12" font-weight="500" fill="#2bc4a0">SIMDIS 3D view</text>
+
+  <rect x="360" y="385" width="145" height="42" rx="8" fill="#ef7b5a" fill-opacity="0.08" stroke="#ef7b5a" stroke-width="0.5"/>
+  <text x="433" y="410" text-anchor="middle" font-size="12" font-weight="500" fill="#ef7b5a">Survivability</text>
+
+  <rect x="520" y="385" width="120" height="42" rx="8" fill="#efaa3d" fill-opacity="0.08" stroke="#efaa3d" stroke-width="0.5"/>
+  <text x="580" y="410" text-anchor="middle" font-size="12" font-weight="500" fill="#efaa3d">Trade studies</text>
+</svg>
+</div>
+</div>
+
+<!-- TAB 3: SYSTEMS MODELLED -->
+<div id="systems" class="panel">
+<div class="svg-wrap">
+<svg width="100%" viewBox="0 0 680 420" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="a3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+  <!-- Hard-kill column -->
+  <text x="170" y="28" text-anchor="middle" font-size="14" font-weight="500" fill="#e4e6ed">Hard-kill systems</text>
+  <rect x="60" y="44" width="220" height="42" rx="8" fill="#2bc4a0" fill-opacity="0.08" stroke="#2bc4a0" stroke-width="0.5"/>
+  <text x="170" y="69" text-anchor="middle" font-size="13" font-weight="500" fill="#2bc4a0">Surface-to-air missiles</text>
+  <rect x="60" y="96" width="220" height="42" rx="8" fill="#2bc4a0" fill-opacity="0.08" stroke="#2bc4a0" stroke-width="0.5"/>
+  <text x="170" y="121" text-anchor="middle" font-size="13" font-weight="500" fill="#2bc4a0">Naval guns / CIWS</text>
+  <rect x="60" y="148" width="220" height="42" rx="8" fill="#2bc4a0" fill-opacity="0.08" stroke="#2bc4a0" stroke-width="0.5"/>
+  <text x="170" y="173" text-anchor="middle" font-size="13" font-weight="500" fill="#2bc4a0">Fire control systems</text>
+
+  <!-- Soft-kill column -->
+  <text x="510" y="28" text-anchor="middle" font-size="14" font-weight="500" fill="#e4e6ed">Soft-kill systems</text>
+  <rect x="400" y="44" width="220" height="42" rx="8" fill="#9b7bef" fill-opacity="0.08" stroke="#9b7bef" stroke-width="0.5"/>
+  <text x="510" y="69" text-anchor="middle" font-size="13" font-weight="500" fill="#9b7bef">Active decoys (Nulka)</text>
+  <rect x="400" y="96" width="220" height="42" rx="8" fill="#9b7bef" fill-opacity="0.08" stroke="#9b7bef" stroke-width="0.5"/>
+  <text x="510" y="121" text-anchor="middle" font-size="13" font-weight="500" fill="#9b7bef">Chaff launchers</text>
+  <rect x="400" y="148" width="220" height="42" rx="8" fill="#9b7bef" fill-opacity="0.08" stroke="#9b7bef" stroke-width="0.5"/>
+  <text x="510" y="173" text-anchor="middle" font-size="13" font-weight="500" fill="#9b7bef">ECM jammers</text>
+
+  <!-- Sensors row -->
+  <text x="340" y="228" text-anchor="middle" font-size="14" font-weight="500" fill="#e4e6ed">Sensors and environment</text>
+  <rect x="40" y="244" width="155" height="48" rx="8" fill="#4d8fef" fill-opacity="0.08" stroke="#4d8fef" stroke-width="0.5"/>
+  <text x="118" y="263" text-anchor="middle" font-size="13" font-weight="500" fill="#4d8fef">Surveillance radar</text>
+  <text x="118" y="279" text-anchor="middle" font-size="11" fill="#5e6478">3D search, track</text>
+
+  <rect x="210" y="244" width="125" height="48" rx="8" fill="#4d8fef" fill-opacity="0.08" stroke="#4d8fef" stroke-width="0.5"/>
+  <text x="273" y="263" text-anchor="middle" font-size="13" font-weight="500" fill="#4d8fef">ESM</text>
+  <text x="273" y="279" text-anchor="middle" font-size="11" fill="#5e6478">Threat warning</text>
+
+  <rect x="350" y="244" width="145" height="48" rx="8" fill="#4d8fef" fill-opacity="0.08" stroke="#4d8fef" stroke-width="0.5"/>
+  <text x="423" y="263" text-anchor="middle" font-size="13" font-weight="500" fill="#4d8fef">IR / EO sensors</text>
+  <text x="423" y="279" text-anchor="middle" font-size="11" fill="#5e6478">Passive tracking</text>
+
+  <rect x="510" y="244" width="130" height="48" rx="8" fill="#efaa3d" fill-opacity="0.08" stroke="#efaa3d" stroke-width="0.5"/>
+  <text x="575" y="263" text-anchor="middle" font-size="13" font-weight="500" fill="#efaa3d">RF propagation</text>
+  <text x="575" y="279" text-anchor="middle" font-size="11" fill="#5e6478">Weather effects</text>
+
+  <!-- CMS -->
+  <rect x="165" y="335" width="350" height="58" rx="12" fill="#ef7b5a" fill-opacity="0.08" stroke="#ef7b5a" stroke-width="0.5"/>
+  <text x="340" y="358" text-anchor="middle" font-size="14" font-weight="500" fill="#ef7b5a">Command and control system</text>
+  <text x="340" y="376" text-anchor="middle" font-size="11" fill="#9da3b4">Target assignment, hard/soft-kill coordination, doctrine</text>
+
+  <!-- Arrows -->
+  <line x1="170" y1="190" x2="280" y2="333" stroke="#5e6478" stroke-width="0.5" marker-end="url(#a3)" opacity="0.3"/>
+  <line x1="510" y1="190" x2="400" y2="333" stroke="#5e6478" stroke-width="0.5" marker-end="url(#a3)" opacity="0.3"/>
+  <line x1="340" y1="292" x2="340" y2="333" stroke="#5e6478" stroke-width="0.5" marker-end="url(#a3)" opacity="0.3"/>
+</svg>
+</div>
+</div>
+
+<script>
+function showTab(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const labels = { sim: 'Simulation', arch: 'Architecture', systems: 'Systems modelled' };
+  document.querySelectorAll('.tab').forEach(t => { if (t.textContent === labels[id]) t.classList.add('active'); });
+}
+function tglZ() { document.getElementById('def-zones').style.display = document.getElementById('t-zones').checked ? '' : 'none'; }
+function tglS() { document.getElementById('soft-kill').style.display = document.getElementById('t-soft').checked ? '' : 'none'; }
+function tglH() { document.getElementById('hard-kill').style.display = document.getElementById('t-hard').checked ? '' : 'none'; }
+function tglW() { document.getElementById('wx-layer').style.display = document.getElementById('t-wx').checked ? '' : 'none'; }
+function setScen(v) {
+  document.getElementById('threats-multi').style.display = v === 'multi' ? '' : 'none';
+  document.getElementById('threats-sat').style.display = v === 'saturation' ? '' : 'none';
+  document.getElementById('threats-single').style.display = v === 'single' ? '' : 'none';
+}
+</script>
+
+</body>
+</html>
